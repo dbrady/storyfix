@@ -2,6 +2,9 @@
 
 A simple CLI tool that applies pre-configured LLM "fixes" to text via OpenRouter.
 
+> [!NOTE]
+> With the exception of this paragraph, this is written entirely with agentic coding. If this app is terrible, it's not because I'm bad at programming, it's because I'm bad at AI.
+
 ## Installation
 
 ```bash
