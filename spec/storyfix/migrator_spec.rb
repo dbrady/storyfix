@@ -50,14 +50,40 @@ RSpec.describe Storyfix::Migrator do
     end
   end
 
+  describe ".seed_default_fixes" do
+    it "inserts default fixes" do
+      Storyfix::Migrator.migrate!(db)
+
+      Storyfix::Migrator.seed_default_fixes(db)
+
+      fix = db.query_single("SELECT name, description FROM fixes WHERE name='tense'")
+      expect(fix[:name]).to eq("tense")
+      expect(fix[:description]).to eq("Narrator verb tense")
+    end
+
+    it "does not overwrite existing fixes" do
+      Storyfix::Migrator.migrate!(db)
+      db.execute("INSERT INTO fixes (name, description, body) VALUES ('tense', 'Custom', 'Custom body')")
+
+      Storyfix::Migrator.seed_default_fixes(db)
+
+      fix = db.query_single("SELECT description FROM fixes WHERE name='tense'")
+      expect(fix[:description]).to eq("Custom")
+    end
+  end
+
   describe ".auto_initialize" do
-    it "migrates and seeds in one step" do
-      described_class.auto_initialize(db)
+    it "migrates and seeds settings and fixes" do
+      Storyfix::Migrator.auto_initialize(db)
+
       version = db.query_single_splat("SELECT version FROM schema_info")
       expect(version).to eq(1)
-      
+
       model = db.query_single_splat("SELECT value FROM settings WHERE key='default-model'")
       expect(model).not_to be_nil
+
+      fix_count = db.query_single_splat("SELECT COUNT(*) FROM fixes")
+      expect(fix_count).to be >= 4
     end
   end
 end

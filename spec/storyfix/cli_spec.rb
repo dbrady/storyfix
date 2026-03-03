@@ -23,14 +23,20 @@ RSpec.describe Storyfix::CLI do
   end
 
   context "with the list command" do
+    it "outputs seeded fix names and descriptions" do
+      expect { Storyfix::CLI.run(["list"]) }.to output(/tense - Narrator verb tense/).to_stdout
+    end
+
     context "when no fixes exist" do
       it "outputs 'No fixes found'" do
+        allow_any_instance_of(Storyfix::Fix::Store).to receive(:all).and_return([])
+
         expect { Storyfix::CLI.run(["list"]) }.to output(/No fixes found/).to_stdout
       end
     end
 
-    context "when fixes exist" do
-      it "outputs fix names and descriptions" do
+    context "when a fix is added" do
+      it "outputs the new fix" do
         Storyfix::CLI.run(["add", "FixSpelling", "Corrects spelling errors", "Fix spelling"])
 
         expect { Storyfix::CLI.run(["list"]) }.to output(/FixSpelling - Corrects spelling errors/).to_stdout
