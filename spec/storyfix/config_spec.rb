@@ -3,79 +3,145 @@ require "spec_helper"
 RSpec.describe Storyfix::Config do
   let(:setting_store) { instance_double("Storyfix::Setting") }
 
-  it "prioritizes CLI over ENV and Settings" do
-    allow(setting_store).to receive(:get).with("my-key").and_return("db-val")
-    env = { "STORYFIX_MY_KEY" => "env-val" }
+  describe "#get" do
+    context "with CLI option set" do
+      it "returns the CLI value" do
+        allow(setting_store).to receive(:get).with("my-key").and_return("db-val")
+        env = { "STORYFIX_MY_KEY" => "env-val" }
 
-    config1 = described_class.new(setting_store, env, {})
-    expect(config1.get("my-key")).to eq("env-val")
+        config = Storyfix::Config.new(setting_store, env, { :"my-key" => "cli-val" })
 
-    config2 = described_class.new(setting_store, env, { :"my-key" => "cli-val" })
-    expect(config2.get("my-key")).to eq("cli-val")
+        expect(config.get("my-key")).to eq("cli-val")
+      end
+    end
 
-    config3 = described_class.new(setting_store, {}, {})
-    expect(config3.get("my-key")).to eq("db-val")
+    context "with ENV variable set" do
+      it "returns the ENV value" do
+        allow(setting_store).to receive(:get).with("my-key").and_return("db-val")
+        env = { "STORYFIX_MY_KEY" => "env-val" }
+
+        config = Storyfix::Config.new(setting_store, env, {})
+
+        expect(config.get("my-key")).to eq("env-val")
+      end
+    end
+
+    context "with only settings value" do
+      it "returns the settings value" do
+        allow(setting_store).to receive(:get).with("my-key").and_return("db-val")
+
+        config = Storyfix::Config.new(setting_store, {}, {})
+
+        expect(config.get("my-key")).to eq("db-val")
+      end
+    end
   end
 
-  it "resolves api_key from OPENROUTER_API_KEY env" do
-    allow(setting_store).to receive(:get).and_return(nil)
-    config = described_class.new(setting_store, { "OPENROUTER_API_KEY" => "secret" })
-    expect(config.api_key).to eq("secret")
+  describe "#api_key" do
+    context "with OPENROUTER_API_KEY env variable" do
+      it "returns the env value" do
+        allow(setting_store).to receive(:get).and_return(nil)
+
+        config = Storyfix::Config.new(setting_store, { "OPENROUTER_API_KEY" => "secret" })
+
+        expect(config.api_key).to eq("secret")
+      end
+    end
+
+    context "with openrouter-api-key setting" do
+      it "returns the setting value" do
+        allow(setting_store).to receive(:get).with("openrouter-api-key").and_return("openrouter-key")
+
+        config = Storyfix::Config.new(setting_store, {}, {})
+
+        expect(config.api_key).to eq("openrouter-key")
+      end
+    end
+
+    context "with api-key setting as fallback" do
+      it "returns the legacy setting value" do
+        allow(setting_store).to receive(:get).with("openrouter-api-key").and_return(nil)
+        allow(setting_store).to receive(:get).with("api-key").and_return("legacy-key")
+
+        config = Storyfix::Config.new(setting_store, {}, {})
+
+        expect(config.api_key).to eq("legacy-key")
+      end
+    end
   end
 
-  it "resolves api_key from openrouter-api-key setting" do
-    allow(setting_store).to receive(:get).with("openrouter-api-key").and_return("openrouter-key")
-    config = described_class.new(setting_store, {}, {})
-    expect(config.api_key).to eq("openrouter-key")
+  describe "#model_for" do
+    context "with a model alias defined" do
+      it "returns the aliased model" do
+        allow(setting_store).to receive(:get).with("model-opus").and_return("anthropic/claude-3-opus")
+
+        config = Storyfix::Config.new(setting_store)
+
+        expect(config.model_for("opus")).to eq("anthropic/claude-3-opus")
+      end
+    end
+
+    context "without a model alias defined" do
+      it "returns the input unchanged" do
+        allow(setting_store).to receive(:get).with("model-custom").and_return(nil)
+
+        config = Storyfix::Config.new(setting_store)
+
+        expect(config.model_for("custom")).to eq("custom")
+      end
+    end
+
+    context "with nil input" do
+      it "returns nil" do
+        config = Storyfix::Config.new(setting_store)
+
+        expect(config.model_for(nil)).to be_nil
+      end
+    end
   end
 
-  it "resolves api_key from api-key setting as fallback" do
-    allow(setting_store).to receive(:get).with("openrouter-api-key").and_return(nil)
-    allow(setting_store).to receive(:get).with("api-key").and_return("legacy-key")
-    config = described_class.new(setting_store, {}, {})
-    expect(config.api_key).to eq("legacy-key")
+  describe "#system_prompt" do
+    it "returns the system-prompt-fix setting" do
+      allow(setting_store).to receive(:get).with("system-prompt-fix").and_return("You are helpful.")
+
+      config = Storyfix::Config.new(setting_store)
+
+      expect(config.system_prompt).to eq("You are helpful.")
+    end
   end
 
-  it "resolves model aliases" do
-    allow(setting_store).to receive(:get).with("model-opus").and_return("anthropic/claude-3-opus")
-    allow(setting_store).to receive(:get).with("model-custom").and_return(nil)
+  describe "#default_model" do
+    it "returns the default-model setting" do
+      allow(setting_store).to receive(:get).with("default-model").and_return("gpt-4")
 
-    config = described_class.new(setting_store)
-    expect(config.model_for("opus")).to eq("anthropic/claude-3-opus")
-    expect(config.model_for("custom")).to eq("custom")
+      config = Storyfix::Config.new(setting_store)
+
+      expect(config.default_model).to eq("gpt-4")
+    end
   end
 
-  it "returns nil for model_for(nil)" do
-    config = described_class.new(setting_store)
-    expect(config.model_for(nil)).to be_nil
-  end
+  describe "#resolved_model" do
+    context "with CLI model option" do
+      it "resolves the CLI model through aliases" do
+        allow(setting_store).to receive(:get).with("model-fast").and_return("gpt-4-turbo")
+        allow(setting_store).to receive(:get).with("default-model").and_return("gpt-3.5")
 
-  it "returns system_prompt from settings" do
-    allow(setting_store).to receive(:get).with("system-prompt-fix").and_return("You are helpful.")
-    config = described_class.new(setting_store)
-    expect(config.system_prompt).to eq("You are helpful.")
-  end
+        config = Storyfix::Config.new(setting_store, {}, { model: "fast" })
 
-  it "returns default_model from settings" do
-    allow(setting_store).to receive(:get).with("default-model").and_return("gpt-4")
-    config = described_class.new(setting_store)
-    expect(config.default_model).to eq("gpt-4")
-  end
+        expect(config.resolved_model).to eq("gpt-4-turbo")
+      end
+    end
 
-  it "resolves model using CLI option first" do
-    allow(setting_store).to receive(:get).with("model-fast").and_return("gpt-4-turbo")
-    allow(setting_store).to receive(:get).with("default-model").and_return("gpt-3.5")
+    context "without CLI model option" do
+      it "falls back to default_model" do
+        allow(setting_store).to receive(:get).with("model").and_return(nil)
+        allow(setting_store).to receive(:get).with("default-model").and_return("gpt-3.5")
+        allow(setting_store).to receive(:get).with("model-gpt-3.5").and_return(nil)
 
-    config = described_class.new(setting_store, {}, { model: "fast" })
-    expect(config.resolved_model).to eq("gpt-4-turbo")
-  end
+        config = Storyfix::Config.new(setting_store, {}, {})
 
-  it "falls back to default_model for resolved_model" do
-    allow(setting_store).to receive(:get).with("model").and_return(nil)
-    allow(setting_store).to receive(:get).with("default-model").and_return("gpt-3.5")
-    allow(setting_store).to receive(:get).with("model-gpt-3.5").and_return(nil)
-
-    config = described_class.new(setting_store, {}, {})
-    expect(config.resolved_model).to eq("gpt-3.5")
+        expect(config.resolved_model).to eq("gpt-3.5")
+      end
+    end
   end
 end

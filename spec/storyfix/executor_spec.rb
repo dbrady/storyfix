@@ -9,8 +9,7 @@ RSpec.describe Storyfix::Executor do
   before do
     Storyfix::Schema.apply(db)
     Storyfix::Migrator.seed_defaults(db)
-
-    db.execute("INSERT INTO fixes (name, description, body) VALUES ('test', 'desc', 'Fix {{1}}.')")
+    db.execute("INSERT INTO fixes (name, description, body) VALUES ('FixSpelling', 'Corrects spelling', 'Fix {{1}}.')")
     db.execute("INSERT INTO settings (key, value) VALUES ('api-key', 'fake-key')")
   end
 
@@ -19,84 +18,80 @@ RSpec.describe Storyfix::Executor do
     FileUtils.remove_entry(tmp_dir)
   end
 
-  it "executes a fix and calls the API" do
-    input_file = File.join(tmp_dir, "in.txt")
-    File.write(input_file, "input text")
+  context "when executing a fix" do
+    it "calls the API and outputs the result" do
+      input_file = File.join(tmp_dir, "in.txt")
+      File.write(input_file, "input text")
+      opts = { input: input_file, verbose: false, debug: false }
+      executor = Storyfix::Executor.new(db: db, opts: opts)
+      stub_request(:post, Storyfix::ApiClient::ENDPOINT).to_return(
+        status: 200,
+        body: { choices: [{ message: { content: "Fixed text." } }] }.to_json
+      )
 
-    opts = { input: input_file, verbose: false, debug: false }
-    executor = described_class.new(db: db, opts: opts)
-
-    stub_request(:post, Storyfix::ApiClient::ENDPOINT).to_return(
-      status: 200,
-      body: { choices: [{ message: { content: "Fixed text." } }] }.to_json
-    )
-
-    expect {
-      executor.run("test", ["this"])
-    }.to output("Fixed text.").to_stdout
+      expect { executor.run("FixSpelling", ["errors"]) }.to output("Fixed text.").to_stdout
+    end
   end
 
-  it "raises ArgumentError when fix not found" do
-    input_file = File.join(tmp_dir, "in.txt")
-    File.write(input_file, "input text")
+  context "when the fix does not exist" do
+    it "raises ArgumentError" do
+      input_file = File.join(tmp_dir, "in.txt")
+      File.write(input_file, "input text")
+      opts = { input: input_file, verbose: false, debug: false }
+      executor = Storyfix::Executor.new(db: db, opts: opts)
 
-    opts = { input: input_file, verbose: false, debug: false }
-    executor = described_class.new(db: db, opts: opts)
-
-    expect {
-      executor.run("nonexistent", [])
-    }.to raise_error(ArgumentError, /Fix 'nonexistent' not found/)
+      expect { executor.run("NonexistentFix", []) }
+        .to raise_error(ArgumentError, /Fix 'NonexistentFix' not found/)
+    end
   end
 
-  it "outputs verbose messages when verbose is true" do
-    input_file = File.join(tmp_dir, "in.txt")
-    File.write(input_file, "input text")
+  context "with verbose option enabled" do
+    it "outputs progress messages to stderr" do
+      input_file = File.join(tmp_dir, "in.txt")
+      File.write(input_file, "input text")
+      opts = { input: input_file, verbose: true, debug: false }
+      executor = Storyfix::Executor.new(db: db, opts: opts)
+      stub_request(:post, Storyfix::ApiClient::ENDPOINT).to_return(
+        status: 200,
+        body: { choices: [{ message: { content: "output" } }] }.to_json
+      )
 
-    opts = { input: input_file, verbose: true, debug: false }
-    executor = described_class.new(db: db, opts: opts)
-
-    stub_request(:post, Storyfix::ApiClient::ENDPOINT).to_return(
-      status: 200,
-      body: { choices: [{ message: { content: "output" } }] }.to_json
-    )
-
-    expect {
-      executor.run("test", ["arg"])
-    }.to output(/Reading input.*Calling API.*Writing output/m).to_stderr
+      expect { executor.run("FixSpelling", ["arg"]) }
+        .to output(/Reading input.*Calling API.*Writing output/m).to_stderr
+    end
   end
 
-  it "outputs debug messages when debug is true" do
-    input_file = File.join(tmp_dir, "in.txt")
-    File.write(input_file, "input text")
+  context "with debug option enabled" do
+    it "outputs debug info to stderr" do
+      input_file = File.join(tmp_dir, "in.txt")
+      File.write(input_file, "input text")
+      opts = { input: input_file, verbose: false, debug: true }
+      executor = Storyfix::Executor.new(db: db, opts: opts)
+      stub_request(:post, Storyfix::ApiClient::ENDPOINT).to_return(
+        status: 200,
+        body: { choices: [{ message: { content: "output" } }] }.to_json
+      )
 
-    opts = { input: input_file, verbose: false, debug: true }
-    executor = described_class.new(db: db, opts: opts)
-
-    stub_request(:post, Storyfix::ApiClient::ENDPOINT).to_return(
-      status: 200,
-      body: { choices: [{ message: { content: "output" } }] }.to_json
-    )
-
-    expect {
-      executor.run("test", ["arg"])
-    }.to output(/Model:.*System:.*Prompt:/m).to_stderr
+      expect { executor.run("FixSpelling", ["arg"]) }
+        .to output(/Model:.*System:.*Prompt:/m).to_stderr
+    end
   end
 
-  it "writes output to file when output option is specified" do
-    input_file = File.join(tmp_dir, "in.txt")
-    output_file = File.join(tmp_dir, "out.txt")
-    File.write(input_file, "input text")
+  context "with output file option" do
+    it "writes result to the output file" do
+      input_file = File.join(tmp_dir, "in.txt")
+      output_file = File.join(tmp_dir, "out.txt")
+      File.write(input_file, "input text")
+      opts = { input: input_file, output: output_file, verbose: false, debug: false }
+      executor = Storyfix::Executor.new(db: db, opts: opts)
+      stub_request(:post, Storyfix::ApiClient::ENDPOINT).to_return(
+        status: 200,
+        body: { choices: [{ message: { content: "file output" } }] }.to_json
+      )
 
-    opts = { input: input_file, output: output_file, verbose: false, debug: false }
-    executor = described_class.new(db: db, opts: opts)
+      executor.run("FixSpelling", ["arg"])
 
-    stub_request(:post, Storyfix::ApiClient::ENDPOINT).to_return(
-      status: 200,
-      body: { choices: [{ message: { content: "file output" } }] }.to_json
-    )
-
-    executor.run("test", ["arg"])
-
-    expect(File.read(output_file)).to eq("file output")
+      expect(File.read(output_file)).to eq("file output")
+    end
   end
 end

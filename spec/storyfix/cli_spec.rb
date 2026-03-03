@@ -15,136 +15,180 @@ RSpec.describe Storyfix::CLI do
     FileUtils.remove_entry(tmp_dir)
   end
 
-  it "calls Optimist.educate when argv is empty" do
-    expect(Optimist).to receive(:educate)
-    described_class.run([])
-  end
-
-  describe "list command" do
-    it "shows 'No fixes found' when empty" do
-      expect { described_class.run(["list"]) }.to output(/No fixes found/).to_stdout
-    end
-
-    it "lists fixes with name and description" do
-      described_class.run(["add", "myfix", "My description", "body"])
-      expect { described_class.run(["list"]) }.to output(/myfix - My description/).to_stdout
+  context "with no arguments" do
+    it "calls Optimist.educate" do
+      expect(Optimist).to receive(:educate)
+      Storyfix::CLI.run([])
     end
   end
 
-  describe "add command" do
-    it "creates a fix and shows success message" do
-      expect { described_class.run(["add", "testfix", "desc", "body"]) }
-        .to output(/Fix 'testfix' created/).to_stderr
+  context "with the list command" do
+    context "when no fixes exist" do
+      it "outputs 'No fixes found'" do
+        expect { Storyfix::CLI.run(["list"]) }.to output(/No fixes found/).to_stdout
+      end
     end
 
-    it "returns 1 when missing arguments" do
-      expect(described_class.run(["add", "only-name"])).to eq(1)
-    end
-  end
+    context "when fixes exist" do
+      it "outputs fix names and descriptions" do
+        Storyfix::CLI.run(["add", "FixSpelling", "Corrects spelling errors", "Fix spelling"])
 
-  describe "remove command" do
-    it "removes a fix and shows success message" do
-      described_class.run(["add", "delfix", "desc", "body"])
-      expect { described_class.run(["remove", "delfix"]) }
-        .to output(/Fix 'delfix' removed/).to_stderr
-    end
-
-    it "returns 1 when fix not found" do
-      expect(described_class.run(["remove", "nonexistent"])).to eq(1)
-    end
-
-    it "returns 1 when no name given" do
-      expect(described_class.run(["remove"])).to eq(1)
+        expect { Storyfix::CLI.run(["list"]) }.to output(/FixSpelling - Corrects spelling errors/).to_stdout
+      end
     end
   end
 
-  describe "show command" do
-    it "shows fix details" do
-      described_class.run(["add", "showfix", "Show desc", "Show body"])
-      expect { described_class.run(["show", "showfix"]) }
-        .to output(/Name: showfix.*Description: Show desc.*Body:\nShow body/m).to_stdout
+  context "with the add command" do
+    context "with valid arguments" do
+      it "creates the fix" do
+        expect { Storyfix::CLI.run(["add", "FixGrammar", "Fixes grammar", "body"]) }
+          .to output(/Fix 'FixGrammar' created/).to_stderr
+      end
     end
 
-    it "returns 1 when fix not found" do
-      expect(described_class.run(["show", "nonexistent"])).to eq(1)
-    end
-
-    it "returns 1 when no name given" do
-      expect(described_class.run(["show"])).to eq(1)
-    end
-  end
-
-  describe "set-config command" do
-    it "sets a config value" do
-      expect { described_class.run(["set-config", "test-key", "test-val"]) }
-        .to output(/Config 'test-key' set/).to_stderr
-    end
-
-    it "returns 1 when missing arguments" do
-      expect(described_class.run(["set-config", "only-key"])).to eq(1)
+    context "with missing arguments" do
+      it "returns 1" do
+        expect(Storyfix::CLI.run(["add", "only-name"])).to eq(1)
+      end
     end
   end
 
-  describe "get-config command" do
-    it "gets a config value" do
-      described_class.run(["set-config", "mykey", "myval"])
-      expect { described_class.run(["get-config", "mykey"]) }
-        .to output(/myval/).to_stdout
+  context "with the remove command" do
+    context "when the fix exists" do
+      it "removes the fix" do
+        Storyfix::CLI.run(["add", "FixTense", "Changes tense", "body"])
+
+        expect { Storyfix::CLI.run(["remove", "FixTense"]) }
+          .to output(/Fix 'FixTense' removed/).to_stderr
+      end
     end
 
-    it "returns 1 when key not found" do
-      expect(described_class.run(["get-config", "nonexistent"])).to eq(1)
+    context "when the fix does not exist" do
+      it "returns 1" do
+        expect(Storyfix::CLI.run(["remove", "nonexistent"])).to eq(1)
+      end
     end
 
-    it "returns 1 when no key given" do
-      expect(described_class.run(["get-config"])).to eq(1)
+    context "with no name given" do
+      it "returns 1" do
+        expect(Storyfix::CLI.run(["remove"])).to eq(1)
+      end
     end
   end
 
-  describe "list-configs command" do
-    it "lists all config values" do
-      described_class.run(["set-config", "k1", "v1"])
-      described_class.run(["set-config", "k2", "v2"])
-      output = capture_stdout { described_class.run(["list-configs"]) }
+  context "with the show command" do
+    context "when the fix exists" do
+      it "outputs fix details" do
+        Storyfix::CLI.run(["add", "FixPOV", "Changes point of view", "Change POV"])
+
+        expect { Storyfix::CLI.run(["show", "FixPOV"]) }
+          .to output(/Name: FixPOV.*Description: Changes point of view.*Body:\nChange POV/m).to_stdout
+      end
+    end
+
+    context "when the fix does not exist" do
+      it "returns 1" do
+        expect(Storyfix::CLI.run(["show", "nonexistent"])).to eq(1)
+      end
+    end
+
+    context "with no name given" do
+      it "returns 1" do
+        expect(Storyfix::CLI.run(["show"])).to eq(1)
+      end
+    end
+  end
+
+  context "with the set-config command" do
+    context "with valid arguments" do
+      it "sets the config value" do
+        expect { Storyfix::CLI.run(["set-config", "test-key", "test-val"]) }
+          .to output(/Config 'test-key' set/).to_stderr
+      end
+    end
+
+    context "with missing arguments" do
+      it "returns 1" do
+        expect(Storyfix::CLI.run(["set-config", "only-key"])).to eq(1)
+      end
+    end
+  end
+
+  context "with the get-config command" do
+    context "when the key exists" do
+      it "outputs the value" do
+        Storyfix::CLI.run(["set-config", "mykey", "myval"])
+
+        expect { Storyfix::CLI.run(["get-config", "mykey"]) }
+          .to output(/myval/).to_stdout
+      end
+    end
+
+    context "when the key does not exist" do
+      it "returns 1" do
+        expect(Storyfix::CLI.run(["get-config", "nonexistent"])).to eq(1)
+      end
+    end
+
+    context "with no key given" do
+      it "returns 1" do
+        expect(Storyfix::CLI.run(["get-config"])).to eq(1)
+      end
+    end
+  end
+
+  context "with the list-configs command" do
+    it "outputs all config values" do
+      Storyfix::CLI.run(["set-config", "k1", "v1"])
+      Storyfix::CLI.run(["set-config", "k2", "v2"])
+
+      output = capture_stdout { Storyfix::CLI.run(["list-configs"]) }
+
       expect(output).to include("k1=v1")
       expect(output).to include("k2=v2")
     end
   end
 
-  describe "fix execution" do
-    it "returns 1 when fix not found" do
-      expect(described_class.run(["nonexistent-fix"])).to eq(1)
+  context "with a fix name that does not exist" do
+    it "returns 1" do
+      expect(Storyfix::CLI.run(["NonexistentFix"])).to eq(1)
     end
   end
 
-  describe "error handling" do
-    it "returns 1 and prints error for StoryfixError" do
-      described_class.run(["add", "badinput", "desc", "body {{1}}"])
+  context "when a StoryfixError is raised" do
+    it "returns 1 and prints the error" do
+      Storyfix::CLI.run(["add", "FixArgs", "Requires args", "body {{1}}"])
+
       result = nil
       expect {
-        result = described_class.run(["badinput"])
+        result = Storyfix::CLI.run(["FixArgs"])
       }.to output(/error/).to_stderr
+
       expect(result).to eq(1)
     end
+  end
 
-    it "handles unexpected errors gracefully" do
+  context "when an unexpected error is raised" do
+    it "returns 1 and prints 'unexpected error'" do
+      # Note: allow_any_instance_of is discouraged but CLI lacks DI for Executor
       allow_any_instance_of(Storyfix::Executor).to receive(:run).and_raise(RuntimeError, "boom")
-      described_class.run(["add", "boom", "desc", "body"])
-
+      Storyfix::CLI.run(["add", "FixBoom", "desc", "body"])
       input_file = File.join(tmp_dir, "in.txt")
       File.write(input_file, "test")
 
       result = nil
       expect {
-        result = described_class.run(["boom", "-i", input_file])
+        result = Storyfix::CLI.run(["FixBoom", "-i", input_file])
       }.to output(/unexpected error: boom/).to_stderr
+
       expect(result).to eq(1)
     end
+  end
 
-    it "prints backtrace to STDERR when DEBUG is set" do
+  context "when DEBUG is set and an error occurs" do
+    it "prints the backtrace to STDERR" do
       allow_any_instance_of(Storyfix::Executor).to receive(:run).and_raise(RuntimeError, "debug-error")
-      described_class.run(["add", "debugfix", "desc", "body"])
-
+      Storyfix::CLI.run(["add", "FixDebug", "desc", "body"])
       input_file = File.join(tmp_dir, "in.txt")
       File.write(input_file, "test")
       stderr_file = File.join(tmp_dir, "stderr.txt")
@@ -154,7 +198,7 @@ RSpec.describe Storyfix::CLI do
       original_stderr = STDERR.dup
       STDERR.reopen(stderr_file, "w")
       begin
-        described_class.run(["debugfix", "-i", input_file])
+        Storyfix::CLI.run(["FixDebug", "-i", input_file])
       ensure
         STDERR.flush
         STDERR.reopen(original_stderr)
@@ -162,6 +206,7 @@ RSpec.describe Storyfix::CLI do
       end
 
       captured = File.read(stderr_file)
+
       expect(captured).to include("debug-error")
       expect(captured).to match(/\.rb:\d+/)
     end
