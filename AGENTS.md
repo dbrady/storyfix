@@ -42,9 +42,18 @@ Never run scripts that process code files. Always make changes manually. Avoid c
 
 We do not care about backwards compatibility—we're in early development with no users.
 
-## Spec Checks (CRITICAL)
+## NO CODE WITHOUT SPECS
 
-After substantive changes, verify: `bundle exec rspec`
+**This is non-negotiable.** Every line of code you write MUST have corresponding spec coverage.
+
+- Write the spec FIRST or ALONGSIDE the code, never after
+- Do NOT commit code without specs
+- Do NOT leave specs "for later"
+- Do NOT write placeholder specs that don't actually test anything
+- Run `bundle exec rspec` after EVERY change
+- Run `COVERAGE=1 bundle exec rspec` to verify coverage
+
+**If you write code without specs, you are creating technical debt and breaking the build.** Previous agents have left uncovered code and it is unacceptable.
 
 All code must have 100% spec coverage. All commits require green specs.
 
