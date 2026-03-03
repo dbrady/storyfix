@@ -116,20 +116,22 @@ rule that lets us say whatever we want.
 $ storyfix add fix "Arbitrary fix (must specify)" "{{1}}"
 storyfix: success: Fix 'fix' created.
 
-$ storyfix -i tyrian.md fix "Please translate to hilariously flamboyant Puerto Rican Spanish. BORICA DE CORAZON WEPAAAAA~~"
+$ storyfix -i tyrian.md fix "Please translate to hilariously flamboyant Puerto Rican Spanish. BORICUA DE CORAZON WEPAAAAA~~"
 BORICA DE CORAZON WEPAAAAA~~
 
-¡Ay, Dios mío, mi Tyrian! Camineó hasta su puertota con un suspiro más dramático
-que una telenovela, ¡coño! Él sabía que solo le quedaban tres días pa' juntar
-los cuartos del alquiler, y su casero era más bravo que un tsunami en Santurce,
-¡WEPA! 🌴🔥💃
+Tyrian camino hasta su puerta principal y la jaló con un suspiro más dramático
+que telenovela, ¡ay Dios mío! Él sabía que solo le quedaban tres días pa'
+conseguir el maldito alquiler, y su casero era más bravo que un tigre en la
+selva, ¡coño! WEPA!!!
 
 # I saved the above to tyrian-boricua.md, let's translate it back
 $ cat tyrian-boricua.md | storyfix fix "Please translate this to English. Stay as literal as possible, don't port idioms."
-OH MY HEART BORICA WEPAAAAA~~
-
-Oh my God, my Tyrian! He walked to his big door with a sigh more dramatic than a soap opera, damn! He knew he only had three days to gather the rent money, and his landlord was more fierce than a tsunami in Santurce, WEPA! 🌴🔥💃
+Tyrian walked to his main door and pulled it with a sigh more dramatic than a
+soap opera, oh my God! He knew that he only had three days to get the damn rent,
+and his landlord was more fierce than a tiger in the jungle, damn it! WEPA!!!
 ```
+
+
 
 And just for fun:
 
