@@ -1,4 +1,5 @@
-.ntm
-
-# bv (beads viewer) local config and caches
+.beads/*
 .bv/
+.ntm
+.rspec_status
+coverage/*
