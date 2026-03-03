@@ -18,11 +18,11 @@ module Storyfix
 
     def write_output(content)
       if @opts[:in_place]
-        File.write(@opts[:input], content)
+        File.write(@opts[:input], content + "\n")
       elsif @opts[:output]
-        File.write(@opts[:output], content)
+        File.write(@opts[:output], content + "\n")
       else
-        $stdout.print(content)
+        $stdout.puts(content)
       end
     end
 

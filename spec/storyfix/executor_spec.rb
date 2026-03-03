@@ -29,7 +29,7 @@ RSpec.describe Storyfix::Executor do
         body: { choices: [{ message: { content: "Fixed text." } }] }.to_json
       )
 
-      expect { executor.run("FixSpelling", ["errors"]) }.to output("Fixed text.").to_stdout
+      expect { executor.run("FixSpelling", ["errors"]) }.to output("Fixed text.\n").to_stdout
     end
   end
 
@@ -91,7 +91,7 @@ RSpec.describe Storyfix::Executor do
 
       executor.run("FixSpelling", ["arg"])
 
-      expect(File.read(output_file)).to eq("file output")
+      expect(File.read(output_file)).to eq("file output\n")
     end
   end
 end

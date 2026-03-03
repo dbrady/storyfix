@@ -39,12 +39,12 @@ RSpec.describe Storyfix::IOHandler do
     io = described_class.new(output: output_file)
     io.write_output("output content")
 
-    expect(File.read(output_file)).to eq("output content")
+    expect(File.read(output_file)).to eq("output content\n")
   end
 
   it "writes to stdout when no output file specified" do
     io = described_class.new({})
-    expect { io.write_output("stdout content") }.to output("stdout content").to_stdout
+    expect { io.write_output("stdout content") }.to output("stdout content\n").to_stdout
   end
 
   it "writes in place" do
@@ -54,7 +54,7 @@ RSpec.describe Storyfix::IOHandler do
     io = described_class.new(input: file, in_place: true)
     io.write_output("new")
 
-    expect(File.read(file)).to eq("new")
+    expect(File.read(file)).to eq("new\n")
   end
 
   it "reads input in place mode when file exists" do
