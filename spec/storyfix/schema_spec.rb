@@ -13,10 +13,18 @@ RSpec.describe Storyfix::Schema do
 
   it "creates required tables and tracks schema version" do
     Storyfix::Schema.apply(db)
-    
+
     tables = db.query_splat("SELECT name FROM sqlite_master WHERE type='table'")
     expect(tables).to include("schema_info", "fixes", "settings")
-    
+
+    version = db.query_single_splat("SELECT version FROM schema_info")
+    expect(version).to eq(1)
+  end
+
+  it "is idempotent when applied multiple times" do
+    Storyfix::Schema.apply(db)
+    expect { Storyfix::Schema.apply(db) }.not_to raise_error
+
     version = db.query_single_splat("SELECT version FROM schema_info")
     expect(version).to eq(1)
   end
