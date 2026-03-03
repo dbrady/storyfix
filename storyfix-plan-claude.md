@@ -42,18 +42,19 @@ These values are inserted on first run:
 default-model: sonnet
 api-timeout: 120
 
-model-opus: anthropic/claude-opus-4-20250514
-model-sonnet: anthropic/claude-sonnet-4-20250514
-model-haiku: anthropic/claude-haiku-4-20250514
-model-gpt4: openai/gpt-4-turbo
-model-gemini: google/gemini-pro-1.5
-model-deepseek: deepseek/deepseek-chat
-model-grok: x-ai/grok-2
+model-opus: anthropic/claude-opus-4.6
+model-sonnet: anthropic/claude-sonnet-4.6
+model-haiku: anthropic/claude-haiku-4.5
+model-gpt4: openai/gpt-4
+model-gemini: google/gemini-2.5-pro
+model-deepseek: deepseek/deepseek-v3.2
+model-grok: x-ai/grok-4
+model-perplexity: perplexity/sonar-pro
 
 system-prompt-fix: <full prompt from PRD>
 ```
 
-Note: Model strings should be verified against current OpenRouter documentation before implementation.
+Note: Model strings verified against OpenRouter models list on 2026-03-03; refresh if OpenRouter updates IDs.
 
 ---
 

@@ -17,14 +17,14 @@ Someone comfortable with the bash command line who has an OpenRouter API key.
 
 ## Technical Constraints
 
-* Use ruby 4
+* Use Ruby 3.3+ (tested on 3.4.8)
 * Use OpenRouter for simplicity. Do not use the anthropic gem. Use OpenRouter's
   published REST api
 * Configuration in sqlite db (TODO: Where does storyfix.db live?)
 * Use Optimist gem for argument parsing
 * Fixes: first argument is the name of the fix
 * Fixes are in a sqlite table
-* Main script is storyfix. Fixes are storyfix-<command>
+* Main script is storyfix. Commands are `storyfix <command>`
 * Test with rspec
 * Coverage with simplecov
 * All code must have 100% spec coverage
@@ -117,7 +117,11 @@ settings and ENV vars:
 model-opus: anthropic/claude-opus-4.6
 model-sonnet: anthropic/claude-sonnet-4.6
 model-haiku: anthropic/claude-haiku-4.5
-...continue with current openrouter models from grok, deepseek, chatgpt, perplexity, gemini
+model-gpt4: openai/gpt-4
+model-gemini: google/gemini-2.5-pro
+model-deepseek: deepseek/deepseek-v3.2
+model-grok: x-ai/grok-4
+model-perplexity: perplexity/sonar-pro
 
 ## OpenRouter API Key
 
@@ -200,7 +204,8 @@ Standard ruby gem structure.
 
 ## Dependencies
 
-- **Ruby** (4.x)
+- **Ruby** (3.3+)
+- **extralite** — SQLite database access
 - **colorize** — terminal text output (red for errors, yellow for warnings, etc)
 - **optimist** — CLI option parsing
 - **net/http** — HTTP client for API calls
